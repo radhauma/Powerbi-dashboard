@@ -398,9 +398,9 @@ Always give actionable data-driven recommendations.`;
     isLoading = true;
     document.getElementById("send-btn").disabled = true;
 
-    if (GROQ_API_KEY === "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") {
+    if (false) // key is set {
       removeTyping(typingId);
-      addMessage("ai", "⚠️ Groq API key not set!\n\nSteps to fix (2 minutes):\n1. Go to https://console.groq.com\n2. Sign up FREE (no credit card)\n3. Click API Keys → Create Key\n4. Copy the key\n5. Open index.html → replace YOUR_GROQ_API_KEY_HERE\n6. Re-upload to GitHub");
+      addMessage("ai", "⚠️ Groq API key not set!\n\nSteps to fix (2 minutes):\n1. Go to https://console.groq.com\n2. Sign up FREE (no credit card)\n3. Click API Keys → Create Key\n4. Copy the key\n5. Open index.html → replace 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\n6. Re-upload to GitHub");
       isLoading = false;
       document.getElementById("send-btn").disabled = false;
       return;
