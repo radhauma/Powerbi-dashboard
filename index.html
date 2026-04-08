@@ -304,7 +304,7 @@
   </div>
   <div class="status-pill">
     <div class="status-dot"></div>
-    Gemini Connected
+    Groq AI Connected
   </div>
 </div>
 
@@ -336,7 +336,7 @@
     <div id="messages">
       <div class="msg ai">
         <div class="msg-label">AI Assistant</div>
-        <div class="msg-bubble">👋 Hello! I'm your Power BI AI assistant powered by Gemini.
+        <div class="msg-bubble">👋 Hello! I'm your Power BI AI assistant powered by Groq AI (Free).
 
 I can help you:
 • Explain trends and patterns in your report
@@ -369,19 +369,18 @@ Ask me anything about your dashboard!</div>
 </div>
 
 <script>
-  // ── CONFIG ──
-  const GEMINI_API_KEY = "AIzaSyANYlRXnTaLI4KqJ4Ur44Ss4OH2I9u-wRg";
-  const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
-  const POWERBI_REPORT_URL = "https://app.powerbi.com/reportEmbed?reportId=d532d4d2-7c00-4137-97f6-c2c2ac72767c&autoAuth=true&ctid=ad06ef22-d6dc-4a55-b4c1-c3a158f5f147";
+  // ── CONFIG — GROQ (Free, no quota) ──
+  // 👉 Get free key at: https://console.groq.com (no credit card needed)
+  const GROQ_API_KEY = "YOUR_GROQ_API_KEY_HERE";
+  const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
+  const GROQ_MODEL = "llama-3.1-8b-instant";
 
-  const SYSTEM_CONTEXT = `You are an expert Power BI data analyst assistant. 
-The user is viewing a Power BI report embedded in this interface. 
-Help them understand their data, trends, KPIs, and insights.
-Be concise, analytical, and use bullet points where helpful.
-When you don't have specific data, suggest what to look for and how to interpret typical Power BI metrics.
-Always be helpful and proactive with data-driven recommendations.`;
+  const SYSTEM_CONTEXT = `You are an expert Power BI data analyst assistant.
+The user is viewing a Power BI report showing student/faculty data (Count of City by Name and Stream) across streams like Banking, BMS, Business, Commerce, Design, Economics, Fashion, Finance, Hotel, Law, Legal Studies etc.
+Help them understand trends, KPIs, and insights. Be concise, analytical, and use bullet points where helpful.
+Always give actionable data-driven recommendations.`;
 
-  let chatHistory = [];
+  let chatHistory = [{ role: "system", content: SYSTEM_CONTEXT }];
   let isLoading = false;
 
   // ── SEND MESSAGE ──
@@ -393,39 +392,50 @@ Always be helpful and proactive with data-driven recommendations.`;
     input.value = "";
     input.style.height = "auto";
     addMessage("user", text);
-
-    chatHistory.push({ role: "user", parts: [{ text }] });
+    chatHistory.push({ role: "user", content: text });
 
     const typingId = showTyping();
     isLoading = true;
     document.getElementById("send-btn").disabled = true;
 
+    if (GROQ_API_KEY === "YOUR_GROQ_API_KEY_HERE") {
+      removeTyping(typingId);
+      addMessage("ai", "⚠️ Groq API key not set!\n\nSteps to fix (2 minutes):\n1. Go to https://console.groq.com\n2. Sign up FREE (no credit card)\n3. Click API Keys → Create Key\n4. Copy the key\n5. Open index.html → replace YOUR_GROQ_API_KEY_HERE\n6. Re-upload to GitHub");
+      isLoading = false;
+      document.getElementById("send-btn").disabled = false;
+      return;
+    }
+
     try {
-      const response = await fetch(GEMINI_URL, {
+      const response = await fetch(GROQ_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + GROQ_API_KEY
+        },
         body: JSON.stringify({
-          system_instruction: { parts: [{ text: SYSTEM_CONTEXT }] },
-          contents: chatHistory,
-          generationConfig: { temperature: 0.7, maxOutputTokens: 800 }
+          model: GROQ_MODEL,
+          messages: chatHistory,
+          temperature: 0.7,
+          max_tokens: 800
         })
       });
 
       const data = await response.json();
       removeTyping(typingId);
 
-      if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
-        const reply = data.candidates[0].content.parts[0].text;
+      if (data.choices?.[0]?.message?.content) {
+        const reply = data.choices[0].message.content;
         addMessage("ai", reply);
-        chatHistory.push({ role: "model", parts: [{ text: reply }] });
+        chatHistory.push({ role: "assistant", content: reply });
       } else if (data.error) {
-        addMessage("ai", `⚠️ API Error: ${data.error.message}`);
+        addMessage("ai", "⚠️ Groq Error: " + data.error.message);
       } else {
-        addMessage("ai", "⚠️ No response received. Please try again.");
+        addMessage("ai", "⚠️ No response. Please try again.");
       }
     } catch (err) {
       removeTyping(typingId);
-      addMessage("ai", `⚠️ Network error: ${err.message}`);
+      addMessage("ai", "⚠️ Network error: " + err.message);
     }
 
     isLoading = false;
